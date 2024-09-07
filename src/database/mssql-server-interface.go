@@ -1,13 +1,11 @@
 package database
 
-import "database/sql"
-
 type MssqlServerInterface interface {
 	/*
 		Generic Connection Functions
 	*/
-	EstablishConnection()
-	TerminateConnection()
+	Initialise()
+	establishConnection()
 	generateConnectionString()
 
 	/*
@@ -28,30 +26,33 @@ type MssqlServerInterface interface {
 	/*
 		Initialization Functions
 	*/
+	createDashboarDatadDbIfNotExist()
 	createUserTableIfNotExist()
 	createTaskTableIfNotExist()
 	createDailyTasksTableIfNotExist()
 	createWeeklyTasksTableIfNotExist()
+
+	/*
+		Debugging Functions
+	*/
+	PrintDebugData()
+	getLastFewUsers()
+	getLastFewTasks()
+	getLastFewDailyTasks()
+	getLastFewWeeklyTasks()
 }
 
 type MssqlServer struct {
 	serverName             string
 	databaseName           string
-	userId                 string
-	password               string
 	trustServerCertificate bool
-
-	db *sql.DB
 }
 
-func CreateMssqlServer(serverName string, databaseName string, userId string, password string, trustServerCertificate bool) *MssqlServer {
+func CreateMssqlServer(serverName string, databaseName string, trustServerCertificate bool) *MssqlServer {
 	s := MssqlServer{
 		serverName:             serverName,
 		databaseName:           databaseName,
-		userId:                 userId,
-		password:               password,
 		trustServerCertificate: trustServerCertificate,
-		db:                     nil,
 	}
 
 	return &s
