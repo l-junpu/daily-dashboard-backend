@@ -2,20 +2,26 @@ package main
 
 import (
 	"daily-dashboard-backend/src/database"
-	"fmt"
 	"log"
 
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
 func main() {
-	svr := database.CreateMssqlServer("localhost\\SQLEXPRESS", "DashboardData", true)
+	svr := database.MssqlServer{
+		ServerName:             "localhost\\SQLEXPRESS",
+		DatabaseName:           "DashboardData",
+		TrustedConnection:      true,
+		TrustServerCertificate: true,
+	}
+
 	if err := svr.Initialise(); err != nil {
-		fmt.Println(err)
 		log.Fatal(err)
 	}
 
 	if err := svr.AddUserToDb("sample user"); err != nil {
-		print(err)
+		log.Fatal(err)
 	}
+
+	svr.PrintDebugData()
 }

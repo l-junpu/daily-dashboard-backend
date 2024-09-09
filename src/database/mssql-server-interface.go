@@ -32,6 +32,14 @@ type MssqlServerInterface interface {
 	createTaskTableIfNotExist()
 
 	/*
+		Exec SQL Commands
+	*/
+	execQuery()
+	execCommand()
+	execNamedCommand()
+	printRows()
+
+	/*
 		Debugging Functions
 	*/
 	PrintDebugData()
@@ -40,17 +48,8 @@ type MssqlServerInterface interface {
 }
 
 type MssqlServer struct {
-	serverName             string
-	databaseName           string
-	trustServerCertificate bool
-}
-
-func CreateMssqlServer(serverName string, databaseName string, trustServerCertificate bool) *MssqlServer {
-	s := MssqlServer{
-		serverName:             serverName,
-		databaseName:           databaseName,
-		trustServerCertificate: trustServerCertificate,
-	}
-
-	return &s
+	ServerName             string
+	DatabaseName           string
+	TrustedConnection      bool
+	TrustServerCertificate bool
 }
