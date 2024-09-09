@@ -17,6 +17,7 @@ type MssqlServerInterface interface {
 	/*
 		Database Operations
 	*/
+	AddUserToDb()
 	AddTaskToUser()
 	RemoveTaskFromUser()
 	GetWeeklyTasksFromUser()
@@ -29,8 +30,6 @@ type MssqlServerInterface interface {
 	createDashboarDatadDbIfNotExist()
 	createUserTableIfNotExist()
 	createTaskTableIfNotExist()
-	createDailyTasksTableIfNotExist()
-	createWeeklyTasksTableIfNotExist()
 
 	/*
 		Debugging Functions
@@ -38,8 +37,6 @@ type MssqlServerInterface interface {
 	PrintDebugData()
 	getLastFewUsers()
 	getLastFewTasks()
-	getLastFewDailyTasks()
-	getLastFewWeeklyTasks()
 }
 
 type MssqlServer struct {

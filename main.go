@@ -14,4 +14,8 @@ func main() {
 		fmt.Println(err)
 		log.Fatal(err)
 	}
+
+	if err := svr.AddUserToDb("sample user"); err != nil {
+		print(err)
+	}
 }
