@@ -12,6 +12,7 @@ type MssqlServer struct {
 	DatabaseName           string
 	TrustedConnection      bool
 	TrustServerCertificate bool
+	EnablePrintouts        bool
 }
 
 /*

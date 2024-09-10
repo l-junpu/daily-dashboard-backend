@@ -7,7 +7,7 @@ import (
 )
 
 /*
-	Exec SQL Commands
+Exec SQL Commands
 */
 func (s *MssqlServer) execQuery(query string) (*sql.Rows, error) {
 	db, err := s.establishConnection()
@@ -23,6 +23,26 @@ func (s *MssqlServer) execQuery(query string) (*sql.Rows, error) {
 	return rows, nil
 }
 
+func (s *MssqlServer) execNamedQuery(namedQuery string, namedArgs ...interface{}) (*sql.Rows, error) {
+	db, err := s.establishConnection()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(namedQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing named query: %w", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(namedArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("error executing named query: %w", err)
+	}
+	return rows, nil
+}
+
 func (s *MssqlServer) execCommand(command string) error {
 	db, err := s.establishConnection()
 	if err != nil {
@@ -30,10 +50,18 @@ func (s *MssqlServer) execCommand(command string) error {
 	}
 	defer db.Close()
 
-	_, err = db.Exec(command)
+	result, err := db.Exec(command)
 	if err != nil {
 		return fmt.Errorf("error executing command: %w", err)
 	}
+
+	if s.EnablePrintouts {
+		affectedCount, err := result.RowsAffected()
+		if err == nil {
+			fmt.Printf("Sql Command: %s\nRows affected: %d\n\n", command, affectedCount)
+		}
+	}
+
 	return nil
 }
 
@@ -50,31 +78,19 @@ func (s *MssqlServer) execNamedCommand(namedCommand string, namedArgs ...interfa
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(namedArgs...)
+	result, err := stmt.Exec(namedArgs...)
 	if err != nil {
 		return fmt.Errorf("error executing named command: %w", err)
 	}
+
+	if s.EnablePrintouts {
+		affectedCount, err := result.RowsAffected()
+		if err == nil {
+			fmt.Printf("Sql Named Command: %s\nRows affected: %d\n\n", namedCommand, affectedCount)
+		}
+	}
+
 	return nil
-}
-
-func (s *MssqlServer) execNamedQuery(namedQuery string, namedArgs ...interface{}) (*sql.Rows, error) {
-	db, err := s.establishConnection()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(namedQuery)
-	if err != nil {
-		return nil, fmt.Errorf("error preparing named query: %w", err)
-	}
-	defer stmt.Close()
-	
-	rows, err := stmt.Query(namedArgs...)
-	if err != nil {
-		return nil, fmt.Errorf("error executing named query: %w", err)
-	}
-	return rows, nil
 }
 
 func (s *MssqlServer) printRows(rows *sql.Rows) {

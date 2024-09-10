@@ -5,9 +5,9 @@ import (
 	"fmt"
 )
 
-/*
-User Initialization
-*/
+// RegisterNewUser creates a new user in the database if the username does not already exist.
+// @param username The username to register.
+// @return An error if the registration fails, otherwise nil.
 func (s *MssqlServer) RegisterNewUser(username string) error {
 	db, err := s.establishConnection()
 	if err != nil {
@@ -26,6 +26,9 @@ func (s *MssqlServer) RegisterNewUser(username string) error {
 	return err
 }
 
+// GetUserIdFromUsername retrieves the user ID associated with the given username.
+// @param username The username to retrieve the ID for.
+// @return The user ID if found, -1 if not found, and an error if the retrieval fails.
 func (s *MssqlServer) GetUserIdFromUsername(username string) (int, error) {
 	db, err := s.establishConnection()
 	if err != nil {
@@ -44,10 +47,15 @@ func (s *MssqlServer) GetUserIdFromUsername(username string) (int, error) {
 	}
 	defer rows.Close()
 
+	// Check if there are any results
+	// If there are no results, return -1 and not an error
+	if !rows.Next() {
+		return -1, nil
+	}
+
 	// Working with the "guarantee" that there are only
 	// unique Usernames
 	var userId int
-	rows.Next()
 	if err = rows.Scan(&userId); err != nil {
 		return -1, fmt.Errorf("unable to scan for userId: %w", err)
 	}

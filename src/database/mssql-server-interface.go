@@ -35,9 +35,9 @@ type MssqlServerInterface interface {
 		Exec SQL Commands
 	*/
 	execQuery()
+	execNamedQuery()
 	execCommand()
 	execNamedCommand()
-	execNamedQuery()
 	printRows()
 
 	/*
