@@ -17,8 +17,8 @@ type MssqlServerInterface interface {
 	/*
 		Database Operations
 	*/
-	AddUserToDb()
 	AddTaskToUser()
+	UpdateTaskForUser()
 	RemoveTaskFromUser()
 	GetWeeklyTasksFromUser()
 	FindTasksContainingText()
@@ -37,6 +37,7 @@ type MssqlServerInterface interface {
 	execQuery()
 	execCommand()
 	execNamedCommand()
+	execNamedQuery()
 	printRows()
 
 	/*
@@ -45,11 +46,4 @@ type MssqlServerInterface interface {
 	PrintDebugData()
 	getLastFewUsers()
 	getLastFewTasks()
-}
-
-type MssqlServer struct {
-	ServerName             string
-	DatabaseName           string
-	TrustedConnection      bool
-	TrustServerCertificate bool
 }

@@ -1,1 +1,7 @@
 2024/09/09 23:34:25 error scanning for rows: sql: expected 2 destination arguments in Scan, not 1
+2024/09/10 16:06:44 error executing named command: mssql: Incorrect syntax near '@databaseName'.
+2024/09/10 16:06:55 error executing named command: mssql: Incorrect syntax near '@databaseName'.
+2024/09/10 16:17:33 error executing named command: mssql: Incorrect syntax near ']'.
+2024/09/10 16:44:18 unable to scan for userId: sql: Scan called without calling Next
+2024/09/10 17:53:03 unable to scan for userId: sql: Rows are closed
+2024/09/10 17:54:21 unable to scan for userId: sql: Rows are closed

@@ -19,9 +19,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := svr.AddUserToDb("sample user"); err != nil {
-		log.Fatal(err)
-	}
+	svr.RegisterNewUser("jun pu")
+	svr.AddTaskToUser("ryanchoo", "i love my terrapin")
+
+	// if err := svr.AddUserToDb("sample user"); err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	svr.PrintDebugData()
 }
