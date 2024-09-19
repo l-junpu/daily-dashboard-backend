@@ -5,6 +5,7 @@ type MssqlServerInterface interface {
 		Generic Connection Functions
 	*/
 	Initialise()
+	Tick()
 	establishConnection()
 	generateConnectionString()
 

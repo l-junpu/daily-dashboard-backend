@@ -1,6 +1,7 @@
 package main
 
 import (
+	"daily-dashboard-backend/src/api"
 	"daily-dashboard-backend/src/database"
 	"log"
 
@@ -16,15 +17,15 @@ func main() {
 		EnablePrintouts:        false,
 	}
 
+	// Initialize MSSQL Server
 	if err := svr.Initialise(); err != nil {
 		log.Fatal(err)
 	}
 
-	svr.RegisterNewUser("sussy user")
-	//svr.AddTaskToUser("sussy user", "i love my terrapin")
-	//svr.UpdateTaskForUser(2, "booooo")
-	// svr.RemoveTaskFromUser(10)
-	svr.GetWeeklyTasksFromUser("sussy user")
+	// Register Http Handler Functions
+	api.InitializeApi(&svr)
 
-	svr.PrintDebugData()
+	svr.Tick()
+
+	//svr.PrintDebugData()
 }
