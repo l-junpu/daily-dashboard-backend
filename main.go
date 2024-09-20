@@ -26,6 +26,4 @@ func main() {
 	api.InitializeApi(&svr)
 
 	svr.Tick()
-
-	//svr.PrintDebugData()
 }
