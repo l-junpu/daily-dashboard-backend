@@ -8,7 +8,7 @@ import (
 // RegisterNewUser creates a new user in the database if the username does not already exist.
 // @param username The username to register.
 // @return An error if the registration fails, otherwise nil.
-func (s *MssqlServer) RegisterNewUser(username string) error {
+func (s *MssqlServer) RegisterNewUser(username string, password string) error {
 	db, err := s.establishConnection()
 	if err != nil {
 		return err
@@ -18,11 +18,11 @@ func (s *MssqlServer) RegisterNewUser(username string) error {
 	addUserCommand := `
 	IF NOT EXISTS (SELECT Username from Users WHERE Username = @username)
 	BEGIN
-		INSERT INTO Users (Username)
-		VALUES (@username);
+		INSERT INTO Users (Username, Password)
+		VALUES (@username, @password);
 	END;`
 
-	err = s.execNamedCommand(addUserCommand, sql.Named("username", username))
+	err = s.execNamedCommand(addUserCommand, sql.Named("username", username), sql.Named("password", password))
 	return err
 }
 

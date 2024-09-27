@@ -44,7 +44,8 @@ func (s *MssqlServer) createUserTableIfNotExist() error {
 	BEGIN
 		CREATE TABLE Users (
 			Id INT IDENTITY(1,1) PRIMARY KEY,
-			Username VARCHAR(20) NOT NULL UNIQUE
+			Username VARCHAR(20) NOT NULL UNIQUE,
+			Password VARCHAR(20) NOT NULL UNIQUE
 		);
 	END;`
 
