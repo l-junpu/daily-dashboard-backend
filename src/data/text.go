@@ -1,15 +1,33 @@
 package data
 
-type TaskId struct {
+type RemoveTaskRequest struct {
 	TaskId int `json:"task_id"`
 }
 
-type NewTask struct {
+type TaskDetailsResponse struct {
+	TaskId       int    `json:"taskId"`
+	Title        string `json:"title"`
+	Contents     string `json:"contents"`
+	Status       bool   `json:"status"`
+	LastModified string `json:"lastModified"`
+	CreatedOn    string `json:"createdOn"`
+}
+
+type NewTaskResponse struct {
+	TaskId       int    `json:"taskId"`
+	LastModified string `json:"lastModified"`
+	CreatedOn    string `json:"createdOn"`
+}
+
+type NewTaskRequest struct {
 	Username string `json:"username"`
+	Title    string `json:"title"`
 	Contents string `json:"contents"`
 }
 
-type UpdateTask struct {
-	TaskId   int    `json:"task_id"`
+type UpdateTaskContentsRequest struct {
+	TaskId   int    `json:"taskId"`
+	Title    string `json:"title"`
 	Contents string `json:"contents"`
+	Status   bool   `json:"status"`
 }

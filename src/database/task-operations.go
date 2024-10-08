@@ -1,6 +1,7 @@
 package database
 
 import (
+	"daily-dashboard-backend/src/data"
 	"database/sql"
 	"fmt"
 	"log"
@@ -11,32 +12,47 @@ import (
 Database Operations
 */
 
-func (s *MssqlServer) AddTaskToUser(username string, text string) error { // Consider changing username to userId
+func (s *MssqlServer) AddTaskToUser(username string, title string, text string) (data.NewTaskResponse, error) { // Consider changing username to userId
 	userId, err := s.GetUserIdFromUsername(username)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// If userId != -1, it means username exists
+	var response data.NewTaskResponse
 	if userId != -1 {
 		addTask := `
-		INSERT INTO Tasks (UserId, Text, LastModified, CreatedOn)
-		VALUES (@userId, @text, GETDATE(), GETDATE());`
+		INSERT INTO Tasks (UserId, Title, Text, Status, LastModified, CreatedOn)
+		OUTPUT inserted.Id, inserted.LastModified, inserted.CreatedOn
+		VALUES (@userId, @title, @text, 0, GETDATE(), GETDATE());`
 
-		err = s.execNamedCommand(addTask, sql.Named("userId", userId), sql.Named("text", text))
-		return err
+		db, err := s.establishConnection()
+		if err != nil {
+			return response, err
+		}
+		defer db.Close()
+
+		var response data.NewTaskResponse
+		if err = db.QueryRow(addTask, sql.Named("userId", userId), sql.Named("title", title), sql.Named("text", text)).
+			Scan(&response.TaskId, &response.LastModified, &response.CreatedOn); err != nil {
+			return response, err
+		}
+
+		return response, nil
 	}
 
-	return err
+	return response, err
 }
 
-func (s *MssqlServer) UpdateTaskForUser(taskId int, text string) error {
+func (s *MssqlServer) UpdateTaskForUser(taskId int, title string, text string, status bool) error {
 	updateTask := `
 	UPDATE Tasks
-	SET Text = @text, LastModified = GETDATE()
+	SET Title = @title, Text = @text, Status = @status, LastModified = GETDATE()
 	WHERE Id = @taskId;`
 
-	if err := s.execNamedCommand(updateTask, sql.Named("text", text), sql.Named("taskId", taskId)); err != nil {
+	fmt.Println("Updated status: ", status)
+
+	if err := s.execNamedCommand(updateTask, sql.Named("title", title), sql.Named("text", text), sql.Named("status", status), sql.Named("taskId", taskId)); err != nil {
 		fmt.Println(err)
 		return err
 	}
@@ -55,7 +71,7 @@ func (s *MssqlServer) RemoveTaskFromUser(taskId int) error {
 	return nil
 }
 
-func (s *MssqlServer) GetWeeklyTasksFromUser(username string) error { // Consider changing username to userId
+func (s *MssqlServer) GetWeeklyTasksFromUser(username string) ([]data.TaskDetailsResponse, error) {
 	getMonday := func(now time.Time) time.Time {
 		weekday := now.Weekday()
 		if weekday == time.Sunday {
@@ -80,24 +96,27 @@ func (s *MssqlServer) GetWeeklyTasksFromUser(username string) error { // Conside
 		friday = time.Date(friday.Year(), friday.Month(), friday.Day(), 23, 59, 59, 0, time.UTC)
 
 		getWeeklyTasks := `
-		SELECT * FROM Tasks
+		SELECT Id, Title, Text, Status, LastModified, CreatedOn FROM Tasks
 		WHERE UserId = @userId AND @startDate <= CreatedOn AND @endDate >= CreatedOn;`
 
-		weeklyTasks, err := s.execNamedQuery(getWeeklyTasks, sql.Named("userId", userId), sql.Named("startDate", monday), sql.Named("endDate", friday))
+		weeklyTaskRows, err := s.execNamedQuery(getWeeklyTasks, sql.Named("userId", userId), sql.Named("startDate", monday), sql.Named("endDate", friday))
 		if err != nil {
-			return err
+			return nil, err
 		}
-		fmt.Println("Weekly Tasks:")
-		s.printRows(weeklyTasks) // May want to consider writing a function to format it into an array of "struct/interface" so its easier to send to frontend
+		defer weeklyTaskRows.Close()
+
+		var weeklyTasks []data.TaskDetailsResponse
+		for weeklyTaskRows.Next() {
+			var t data.TaskDetailsResponse
+			err = weeklyTaskRows.Scan(&t.TaskId, &t.Title, &t.Contents, &t.Status, &t.LastModified, &t.CreatedOn)
+			if err != nil {
+				log.Fatal(err)
+			}
+			weeklyTasks = append(weeklyTasks, t)
+		}
+
+		return weeklyTasks, nil
 	}
 
-	return nil
-}
-
-func (s *MssqlServer) FindTasksContainingText() {
-
-}
-
-func (s *MssqlServer) FindTasksContainingTextInPastDays() {
-
+	return nil, nil
 }

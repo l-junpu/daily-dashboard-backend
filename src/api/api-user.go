@@ -35,26 +35,34 @@ func HandleRegisterNewUser(s *database.MssqlServer) http.HandlerFunc {
 	}
 }
 
-func HandleGetUserId(s *database.MssqlServer) http.HandlerFunc {
+func HandleUserLogin(s *database.MssqlServer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		AllowCors(w)
-
+		if preflight := HandleOptionsPreflightRequests(w, r); preflight {
+			return
+		}
+		
 		// Decode user data
-		var user data.User
+		var user data.UserDetails
+		fmt.Println(r.Body)
 		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 			WriteAsJson(w, map[string]interface{}{"status": false})
-			err = fmt.Errorf("unable to decode user data in HandleRegisterNewUser(): %w", err)
+			err = fmt.Errorf("unable to decode user data in HandleUserLogin(): %w", err)
 			log.Fatal(err)
 		}
-
+		
 		// Add username to database if it doesn't exist
-		userId, err := s.GetUserIdFromUsername(user.Username)
+		isValidLogin, err := s.VerifyUserLogin(user.Username, user.Password);
+		fmt.Println("Verified user login request")
 		if err != nil {
 			WriteAsJson(w, map[string]interface{}{"status": false})
-			err = fmt.Errorf("unable to insert username into database in HandleRegisterNewUser(): %w", err)
+			err = fmt.Errorf("unable to verify user login details in HandleUserLogin(): %w", err)
 			log.Fatal(err)
 		}
+		if !isValidLogin {
+			WriteAsJson(w, map[string]interface{}{"status": false})
+			return
+		}
 
-		WriteAsJson(w, map[string]interface{}{"user_id": userId})
+		WriteAsJson(w, map[string]interface{}{"status": true})
 	}
 }

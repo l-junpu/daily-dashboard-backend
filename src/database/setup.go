@@ -60,7 +60,9 @@ func (s *MssqlServer) createTaskTableIfNotExist() error {
 		CREATE TABLE Tasks (
 		Id INT PRIMARY KEY IDENTITY(1,1),
 		UserId INT NOT NULL,
+		Title VARCHAR(50) NOT NULL,
 		Text VARCHAR(2000) NOT NULL,
+		Status BIT NOT NULL,
 		LastModified DATETIME NOT NULL DEFAULT GETDATE(),
 		CreatedOn DATETIME NOT NULL DEFAULT GETDATE(),
 		CONSTRAINT FK_Tasks_Users FOREIGN KEY (UserId) REFERENCES Users(Id)
