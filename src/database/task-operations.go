@@ -92,14 +92,14 @@ func (s *MssqlServer) GetWeeklyTasksFromUser(username string) ([]data.TaskDetail
 	if userId != -1 {
 		monday := getMonday(time.Now())
 		monday = time.Date(monday.Year(), monday.Month(), monday.Day(), 0, 0, 0, 0, time.UTC)
-		friday := monday.AddDate(0, 0, 4)
-		friday = time.Date(friday.Year(), friday.Month(), friday.Day(), 23, 59, 59, 0, time.UTC)
+		sunday := monday.AddDate(0, 0, 6)
+		sunday = time.Date(sunday.Year(), sunday.Month(), sunday.Day(), 23, 59, 59, 0, time.UTC)
 
 		getWeeklyTasks := `
 		SELECT Id, Title, Text, Status, LastModified, CreatedOn FROM Tasks
 		WHERE UserId = @userId AND @startDate <= CreatedOn AND @endDate >= CreatedOn;`
 
-		weeklyTaskRows, err := s.execNamedQuery(getWeeklyTasks, sql.Named("userId", userId), sql.Named("startDate", monday), sql.Named("endDate", friday))
+		weeklyTaskRows, err := s.execNamedQuery(getWeeklyTasks, sql.Named("userId", userId), sql.Named("startDate", monday), sql.Named("endDate", sunday))
 		if err != nil {
 			return nil, err
 		}
