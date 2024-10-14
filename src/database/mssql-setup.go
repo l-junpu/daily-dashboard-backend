@@ -9,8 +9,7 @@ import (
 Initialization Functions
 */
 func (s *MssqlServer) createDashboarDatadDbIfNotExist() error {
-	// Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;
-	connectionString := fmt.Sprintf("server=%s; database=%s; trustedConnection=%t; trustServerCertificate=%t", s.ServerName, "master", s.TrustedConnection, s.TrustServerCertificate)
+	connectionString := fmt.Sprintf("server=%s; port=%d; user id=%s; password=%s; database=%s; trustedConnection=%t; trustServerCertificate=%t", s.ServerName, s.Port, s.Username, s.Password, "master", s.TrustedConnection, s.TrustServerCertificate)
 	db, err := sql.Open("sqlserver", connectionString)
 	if err != nil {
 		return fmt.Errorf("error opening database: %w", err)

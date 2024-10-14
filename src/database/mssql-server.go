@@ -9,6 +9,9 @@ import (
 
 type MssqlServer struct {
 	ServerName             string
+	Port                   int
+	Username               string
+	Password               string
 	DatabaseName           string
 	TrustedConnection      bool
 	TrustServerCertificate bool
@@ -54,6 +57,6 @@ func (s *MssqlServer) establishConnection() (*sql.DB, error) {
 }
 
 func (s *MssqlServer) generateConnectionString() string {
-	connectionString := fmt.Sprintf("server=%s; database=%s; trustedConnection=%t; trustServerCertificate=%t", s.ServerName, s.DatabaseName, s.TrustedConnection, s.TrustServerCertificate)
+	connectionString := fmt.Sprintf("server=%s; port=%d; user id=%s; password=%s; database=%s; trustedConnection=%t; trustServerCertificate=%t", s.ServerName, s.Port, s.Username, s.Password, s.DatabaseName, s.TrustedConnection, s.TrustServerCertificate)
 	return connectionString
 }

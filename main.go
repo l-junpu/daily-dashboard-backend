@@ -1,32 +1,42 @@
 package main
 
 import (
+	"daily-dashboard-backend/src/api"
+	"daily-dashboard-backend/src/database"
+	"log"
+	"net/http"
+	"os"
+
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	//mongoDbUri := "mongodb://localhost:27017/"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	username := os.Getenv("MSSQL_USERNAME")
+	password := os.Getenv("MSSQL_PASSWORD")
 
-	// sqlSvr := database.MssqlServer{
-	// 	ServerName:             "localhost\\SQLEXPRESS",
-	// 	DatabaseName:           "DashboardData",
-	// 	TrustedConnection:      true,
-	// 	TrustServerCertificate: true,
-	// 	EnablePrintouts:        false,
-	// }
+	sqlSvr := database.MssqlServer{
+		ServerName:             "localhost",
+		Port:                   1433,
+		Username:               username,
+		Password:               password,
+		DatabaseName:           "DashboardData",
+		TrustedConnection:      true,
+		TrustServerCertificate: true,
+		EnablePrintouts:        false,
+	}
 
-	// // Initialize MSSQL Server
-	// if err := sqlSvr.Initialise(); err != nil {
-	// 	log.Fatal(err)
-	// }
+	// Initialize MSSQL Server
+	if err := sqlSvr.Initialise(); err != nil {
+		log.Fatal(err)
+	}
 
-	// // Register Http Handler Functions For
-	// api.InitializeApi(&sqlSvr)
+	// Register Http Handler Functions For
+	api.InitializeApi(&sqlSvr)
 
-	// http.ListenAndServe("localhost:8080", nil)
-
-	// client, err := llm.CreateMongoDBClient(mongoDbUri)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	http.ListenAndServe("localhost:8080", nil)
 }
