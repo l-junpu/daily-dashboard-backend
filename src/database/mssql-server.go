@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 )
 
@@ -38,10 +37,6 @@ func (s *MssqlServer) Initialise() error {
 	}
 
 	return nil
-}
-
-func (s *MssqlServer) Tick() {
-	http.ListenAndServe("localhost:8080", nil)
 }
 
 func (s *MssqlServer) establishConnection() (*sql.DB, error) {

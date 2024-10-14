@@ -1,29 +1,32 @@
 package main
 
 import (
-	"daily-dashboard-backend/src/api"
-	"daily-dashboard-backend/src/database"
-	"log"
-
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
 func main() {
-	svr := database.MssqlServer{
-		ServerName:             "localhost\\SQLEXPRESS",
-		DatabaseName:           "DashboardData",
-		TrustedConnection:      true,
-		TrustServerCertificate: true,
-		EnablePrintouts:        false,
-	}
+	//mongoDbUri := "mongodb://localhost:27017/"
 
-	// Initialize MSSQL Server
-	if err := svr.Initialise(); err != nil {
-		log.Fatal(err)
-	}
+	// sqlSvr := database.MssqlServer{
+	// 	ServerName:             "localhost\\SQLEXPRESS",
+	// 	DatabaseName:           "DashboardData",
+	// 	TrustedConnection:      true,
+	// 	TrustServerCertificate: true,
+	// 	EnablePrintouts:        false,
+	// }
 
-	// Register Http Handler Functions
-	api.InitializeApi(&svr)
+	// // Initialize MSSQL Server
+	// if err := sqlSvr.Initialise(); err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	svr.Tick()
+	// // Register Http Handler Functions For
+	// api.InitializeApi(&sqlSvr)
+
+	// http.ListenAndServe("localhost:8080", nil)
+
+	// client, err := llm.CreateMongoDBClient(mongoDbUri)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 }
