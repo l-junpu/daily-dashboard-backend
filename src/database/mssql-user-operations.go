@@ -26,9 +26,10 @@ func (s *MssqlServer) RegisterNewUser(username string, password string) error {
 	return err
 }
 
-// RegisterNewUser creates a new user in the database if the username does not already exist.
+// VerifyUserLogin verifies the user login details
 // @param username The username to register.
-// @return An error if the registration fails, otherwise nil.
+// @return True if login details are valid, otherwise false.
+// @return An error if the scanning fails, otherwise nil.
 func (s *MssqlServer) VerifyUserLogin(username string, password string) (bool, error) {
 	db, err := s.establishConnection()
 	if err != nil {
@@ -53,10 +54,10 @@ func (s *MssqlServer) VerifyUserLogin(username string, password string) (bool, e
 	}
 
 	var isValidLogin bool
-    err = rows.Scan(&isValidLogin)
-    if err != nil {
-        return false, err
-    }
+	err = rows.Scan(&isValidLogin)
+	if err != nil {
+		return false, err
+	}
 
 	return isValidLogin, err
 }

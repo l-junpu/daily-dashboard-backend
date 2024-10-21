@@ -18,22 +18,25 @@ func AllowCors(w http.ResponseWriter) {
 func HandleOptionsPreflightRequests(w http.ResponseWriter, r *http.Request) bool {
 	AllowCors(w)
 
-    // Check if it's a preflight request (OPTIONS method)
-    if r.Method == http.MethodOptions {
+	// Check if it's a preflight request (OPTIONS method)
+	if r.Method == http.MethodOptions {
 		// Respond with 200 OK for preflight requests
-        w.WriteHeader(http.StatusOK)
-        return true
-    }
-    return false
+		w.WriteHeader(http.StatusOK)
+		return true
+	}
+	return false
 }
 
-func WriteAsJson(w http.ResponseWriter, mappedResponse map[string]interface{}) error {
+func WriteAsJson(w http.ResponseWriter, mappedResponse map[string]interface{}, statusCode int) error {
 	jsonResponse, err := json.Marshal(mappedResponse)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("unable to encode response to frontend: %s", err.Error()), http.StatusInternalServerError)
 		return fmt.Errorf("unable to encode response to frontend: %w", err)
 	}
 
+	// Write Status Code (http.StatusOk / http.StatusBadRequest)
+	// Write Response Json
+	w.WriteHeader(statusCode)
 	_, err = w.Write(jsonResponse)
 	if err != nil {
 		return fmt.Errorf("unable to write response to frontend: %w", err)
