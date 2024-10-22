@@ -39,4 +39,10 @@ func main() {
 	api.InitializeApi(&sqlSvr)
 
 	http.ListenAndServe("localhost:8080", nil)
+
+	//mongoDbUri := "mongodb://localhost:27017/"
+	// client, err := llm.CreateMongoDBClient(mongoDbUri)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 }

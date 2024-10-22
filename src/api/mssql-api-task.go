@@ -74,14 +74,15 @@ func HandleUpdateTaskForUser(s *database.MssqlServer) http.HandlerFunc {
 			log.Fatal(err)
 		}
 
-		if err := s.UpdateTaskForUser(task.TaskId, task.Title, task.Contents, task.Status); err != nil {
+		lastModified, err := s.UpdateTaskForUser(task.TaskId, task.Title, task.Contents, task.Status);
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			err = fmt.Errorf("unable to update task for user in HandleUpdateTaskForUser(): %w", err)
 			log.Fatal(err)
 		}
 
 		// Change this to return LastModified time
-		WriteAsJson(w, map[string]interface{}{"status": true}, http.StatusOK)
+		WriteAsJson(w, map[string]interface{}{"lastModified": lastModified}, http.StatusOK)
 	}
 }
 

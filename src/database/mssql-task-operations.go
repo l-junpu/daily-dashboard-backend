@@ -44,19 +44,26 @@ func (s *MssqlServer) AddTaskToUser(username string, title string, text string) 
 	return response, err
 }
 
-func (s *MssqlServer) UpdateTaskForUser(taskId int, title string, text string, status bool) error {
+func (s *MssqlServer) UpdateTaskForUser(taskId int, title string, text string, status bool) (string, error) {
 	updateTask := `
 	UPDATE Tasks
 	SET Title = @title, Text = @text, Status = @status, LastModified = GETDATE()
+	OUTPUT inserted.LastModified
 	WHERE Id = @taskId;`
 
-	fmt.Println("Updated status: ", status)
-
-	if err := s.execNamedCommand(updateTask, sql.Named("title", title), sql.Named("text", text), sql.Named("status", status), sql.Named("taskId", taskId)); err != nil {
-		fmt.Println(err)
-		return err
+	db, err := s.establishConnection()
+	if err != nil {
+		return "", err
 	}
-	return nil
+	defer db.Close()
+
+	var lastModified string
+	if err = db.QueryRow(updateTask, sql.Named("title", title), sql.Named("text", text), sql.Named("status", status), sql.Named("taskId", taskId)).
+		Scan(&lastModified); err != nil {
+		return "", err
+	}
+	
+	return lastModified, nil
 }
 
 func (s *MssqlServer) RemoveTaskFromUser(taskId int) error {
