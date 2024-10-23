@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type MssqlServer struct {
@@ -21,6 +24,46 @@ type MssqlServer struct {
 /*
 Connection Functions
 */
+func CreateMssqlServer() *MssqlServer {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	Port, err := strconv.Atoi(os.Getenv("MSSQL_PORT"))
+	if err != nil {
+		log.Fatal("Invalid port number in .env file")
+	}
+
+	TrustedConnection, err := strconv.ParseBool(os.Getenv("MSSQL_TRUSTED_CONNECTION"))
+	if err != nil {
+		log.Fatal("Invalid bool value in .env file")
+	}
+
+	TrustServerCertificate, err := strconv.ParseBool(os.Getenv("MSSQL_TRUST_SERVER_CERTIFICATE"))
+	if err != nil {
+		log.Fatal("Invalid bool value in .env file")
+	}
+
+	EnablePrintouts, err := strconv.ParseBool(os.Getenv("MSSQL_ENABLE_PRINTOUTS"))
+	if err != nil {
+		log.Fatal("Invalid bool value in .env file")
+	}
+
+	sqlSvr := MssqlServer{
+		ServerName:             os.Getenv("MSSQL_SERVER_NAME"),
+		Port:                   Port,
+		Username:               os.Getenv("MSSQL_USERNAME"),
+		Password:               os.Getenv("MSSQL_PASSWORD"),
+		DatabaseName:           os.Getenv("MSSQL_DATABASE_NAME"),
+		TrustedConnection:      TrustedConnection,
+		TrustServerCertificate: TrustServerCertificate,
+		EnablePrintouts:        EnablePrintouts,
+	}
+
+	return &sqlSvr
+}
+
 func (s *MssqlServer) Initialise() error {
 	logFile, err := os.OpenFile("log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {

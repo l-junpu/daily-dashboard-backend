@@ -4,9 +4,11 @@ import (
 	"context"
 	"daily-dashboard-backend/src/data"
 	"fmt"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,8 +20,9 @@ type MongoDBClient struct {
 }
 
 // Create a MongoDB Client that timeout after 10s of failing to perform a task
-func CreateMongoDBClient(uri string) (*MongoDBClient, error) {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri).SetServerSelectionTimeout(10*time.Second))
+func CreateMongoDBClient() (*MongoDBClient, error) {
+	mongoUri := os.Getenv("MONGODB_URI")
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoUri).SetServerSelectionTimeout(10*time.Second))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
 	}
@@ -35,7 +38,7 @@ func (s *MongoDBClient) Terminate() error {
 }
 
 // Retrieves UserDetails
-func (s *MongoDBClient) FindUser(username string) (*data.MongoUserDetails, error) {
+func (s *MongoDBClient) findUser(username string) (*data.MongoUserDetails, error) {
 	filter := bson.M{"username": username}
 	coll := s.MongoClient.Database("UserData").Collection("Users")
 
@@ -48,10 +51,36 @@ func (s *MongoDBClient) FindUser(username string) (*data.MongoUserDetails, error
 	return &user, nil
 }
 
-// Updates a User's Titles[]
-func (s *MongoDBClient) UpdateUser(username string, titles []string) error {
+// Inserts a new User into MongoDB upon successful registration
+func (s *MongoDBClient) InsertUser(username string, password string) error {
+	coll := s.MongoClient.Database("UserData").Collection("Users")
+
+	data := data.MongoUserDetails{
+		Username:      username,
+		Password:      password,
+		Conversations: make([]data.MongoConvoDetails, 0),
+	}
+
+	bsonUserData, err := bson.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("unable to Marshal MongoUserDetails when inserting user: %w", err)
+	}
+
+	user, _ := s.findUser(username)
+	if user == nil {
+		_, err := coll.InsertOne(context.Background(), bsonUserData)
+		if err != nil {
+			return fmt.Errorf("unable to Insert MongoUserDetails: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Updates a User's Conversations[]
+func (s *MongoDBClient) UpdateUser(username string, conversations []data.MongoConvoDetails) error {
 	filter := bson.M{"username": username}
-	update := bson.M{"$set": bson.M{"titles": titles}}
+	update := bson.M{"$set": bson.M{"conversations": conversations}}
 	coll := s.MongoClient.Database("UserData").Collection("Users")
 
 	result, err := coll.UpdateOne(context.Background(), filter, update)
@@ -67,9 +96,86 @@ func (s *MongoDBClient) UpdateUser(username string, titles []string) error {
 	return nil
 }
 
-// Retrieves a Conversation from MongoDB
-func (s *MongoDBClient) FindConversation(username string, title string) (*data.Conversation, error) {
-	filter := bson.M{"title": title}
+// Add a Conversation Detail to UserData in MongoDB
+func (s *MongoDBClient) insertTitle(username string, title string, id interface{}) error {
+	filter := bson.M{"username": username}
+	userCollection := s.MongoClient.Database("UserData").Collection("Users")
+
+	var user data.MongoUserDetails
+	err := userCollection.FindOne(context.Background(), filter).Decode(&user)
+	if err != nil {
+		return fmt.Errorf("unable to find user when inserting title: %w", err)
+	}
+
+	// Convert result of InsertOne.InsertedId -> primitive.ObjectId
+	objectId, ok := id.(primitive.ObjectID)
+	if !ok {
+		return fmt.Errorf("insertedID is not of type primitive.ObjectID")
+	}
+
+	user.Conversations = append(user.Conversations, data.MongoConvoDetails{})
+	copy(user.Conversations[1:], user.Conversations)
+	user.Conversations[0] = data.MongoConvoDetails{Title: title, ObjectID: objectId}
+	return s.UpdateUser(username, user.Conversations)
+}
+
+// Removes a Conversation Detail from UserData in MongoDB
+func (s *MongoDBClient) deleteTitle(username string, idToRemove primitive.ObjectID) error {
+	filter := bson.M{"username": username}
+	userCollection := s.MongoClient.Database("UserData").Collection("Users")
+
+	var user data.MongoUserDetails
+	err := userCollection.FindOne(context.Background(), filter).Decode(&user)
+	if err != nil {
+		return fmt.Errorf("failed to find user when deleting title: %w", err)
+	}
+
+	index := -1
+	for i, convoDetails := range user.Conversations {
+		if convoDetails.ObjectID == idToRemove {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return fmt.Errorf("attempting to remove a conversationId that is not in UserData")
+	}
+
+	// Remove the Conversation Detail by shifting subsequent elements to the index of the idToRemove
+	// Update size
+	copy(user.Conversations[index:], user.Conversations[index+1:])
+	user.Conversations = user.Conversations[:len(user.Conversations)-1]
+	s.UpdateUser(user.Username, user.Conversations)
+
+	return nil
+}
+
+// Insert Message into Conversation
+func (s *MongoDBClient) InsertNewMessage(username string, id primitive.ObjectID, message data.Message) error {
+	convo, err := s.FindConversation(username, id)
+	if err != nil {
+		return fmt.Errorf(": %w", err)
+	}
+
+	convo.Messages = append(convo.Messages, message)
+	err = s.updateConversation(username, id, *convo)
+
+	return err
+}
+
+// Retrieves all Conversation Details attached to a User
+func (s *MongoDBClient) GetConversationDetails(username string) ([]data.MongoConvoDetails, error) {
+	user, err := s.findUser(username)
+	if err != nil {
+		return make([]data.MongoConvoDetails, 0), fmt.Errorf("unable to find user when retrieving conversation details: %w", err)
+	}
+	return user.Conversations, nil
+}
+
+// Retrieves the Actual Conversation from MongoDB
+func (s *MongoDBClient) FindConversation(username string, id primitive.ObjectID) (*data.Conversation, error) {
+	filter := bson.M{"_id": id}
 	coll := s.MongoClient.Database("ConversationData").Collection(username)
 
 	var convo data.Conversation
@@ -82,8 +188,8 @@ func (s *MongoDBClient) FindConversation(username string, title string) (*data.C
 }
 
 // Updates a Conversation in MongoDB
-func (s *MongoDBClient) UpdateConversation(username string, convo data.Conversation) error {
-	filter := bson.M{"title": convo.Title}
+func (s *MongoDBClient) updateConversation(username string, id primitive.ObjectID, convo data.Conversation) error {
+	filter := bson.M{"_id": id}
 	update := bson.M{"$set": bson.M{"messages": convo.Messages}}
 	coll := s.MongoClient.Database("ConversationData").Collection(username)
 
@@ -99,58 +205,34 @@ func (s *MongoDBClient) UpdateConversation(username string, convo data.Conversat
 	return nil
 }
 
-// Inserts a new User into MongoDB upon successful registration
-func (s *MongoDBClient) InsertUser(username string, password string) error {
-	coll := s.MongoClient.Database("UserData").Collection("Users")
-
-	data := data.MongoUserDetails{
-		Username: username,
-		Password: password,
-		Titles:   make([]string, 0),
-	}
-
-	bsonUserData, err := bson.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("unable to Marshal MongoUserDetails when inserting user: %w", err)
-	}
-
-	user, _ := s.FindUser(username)
-	if user == nil {
-		_, err = coll.InsertOne(context.Background(), bsonUserData)
-		if err != nil {
-			return fmt.Errorf("unable to Insert MongoUserDetails: %w", err)
-		}
-	}
-
-	return nil
-}
-
 // Insert a New Conversation in MongoDB
-func (s *MongoDBClient) InsertConversation(username string, conversation data.Conversation) error {
+func (s *MongoDBClient) InsertNewConversation(username string, conversation data.Conversation) (primitive.ObjectID, error) {
 	bsonConvoData, err := bson.Marshal(conversation)
 	if err != nil {
-		return fmt.Errorf("unable to Marshal Conversation when inserting convo: %w", err)
+		return primitive.NilObjectID, fmt.Errorf("unable to Marshal Conversation when inserting convo: %w", err)
 	}
 
-	user, _ := s.FindUser(username)
+	user, _ := s.findUser(username)
 	if user != nil {
 		coll := s.MongoClient.Database("ConversationData").Collection(username)
-		_, err = coll.InsertOne(context.Background(), bsonConvoData)
+		result, err := coll.InsertOne(context.Background(), bsonConvoData)
 		if err != nil {
-			return fmt.Errorf("unable to Insert New Conversation to ConversationData: %w", err)
+			return primitive.NilObjectID, fmt.Errorf("unable to Insert New Conversation to ConversationData: %w", err)
 		}
-		err = s.InsertTitle(username, conversation.Title)
+		err = s.insertTitle(username, conversation.Title, result.InsertedID)
 		if err != nil {
-			return fmt.Errorf("unable to Append New Title to user to UserData: %w", err)
+			return primitive.NilObjectID, fmt.Errorf("unable to Append New Title to user to UserData: %w", err)
 		}
+
+		return result.InsertedID.(primitive.ObjectID), nil
 	}
 
-	return nil
+	return primitive.NilObjectID, fmt.Errorf("unable to find User")
 }
 
 // Delete a Conversation from MongoDB
-func (s *MongoDBClient) DeleteConversation(username string, title string) error {
-	filter := bson.M{"title": title}
+func (s *MongoDBClient) DeleteConversation(username string, objectId primitive.ObjectID) error {
+	filter := bson.M{"_id": objectId}
 	convoCollection := s.MongoClient.Database("ConversationData").Collection(username)
 
 	// Removes the Conversation from Username
@@ -160,7 +242,7 @@ func (s *MongoDBClient) DeleteConversation(username string, title string) error 
 	}
 
 	// Removes the TitleId attached to the UserData
-	err = s.DeleteTitle(username, title)
+	err = s.deleteTitle(username, objectId)
 	if err != nil {
 		return fmt.Errorf("unable to delete title from UserData %w", err)
 	}
@@ -168,65 +250,6 @@ func (s *MongoDBClient) DeleteConversation(username string, title string) error 
 	if result.DeletedCount != 1 {
 		return fmt.Errorf("expected 1 document to be deleted, got %d", result.DeletedCount)
 	}
-
-	return nil
-}
-
-// Retrieves all Titles attached to a User
-func (s *MongoDBClient) GetConversationTitles(username string) ([]string, error) {
-	user, err := s.FindUser(username)
-	if err != nil {
-		return make([]string, 0), fmt.Errorf("unable to find user when retrieving titles: %w", err)
-	}
-	return user.Titles, nil
-}
-
-// Adds a Title to UserData in MongoDB
-func (s *MongoDBClient) InsertTitle(username string, title string) error {
-	filter := bson.M{"username": username}
-	userCollection := s.MongoClient.Database("UserData").Collection("Users")
-
-	var user data.MongoUserDetails
-	err := userCollection.FindOne(context.Background(), filter).Decode(&user)
-	if err != nil {
-		return fmt.Errorf("unable to find user when inserting title: %w", err)
-	}
-
-	user.Titles = append(user.Titles, "")
-	copy(user.Titles[1:], user.Titles)
-	user.Titles[0] = title
-	return s.UpdateUser(username, user.Titles)
-}
-
-// Removes a Title from UserData in MongoDB
-func (s *MongoDBClient) DeleteTitle(username string, titleToRemove string) error {
-	filter := bson.M{"username": username}
-	userCollection := s.MongoClient.Database("UserData").Collection("Users")
-
-	var user data.MongoUserDetails
-	err := userCollection.FindOne(context.Background(), filter).Decode(&user)
-	if err != nil {
-		return fmt.Errorf("failed to find user when deleting title: %w", err)
-	}
-
-	// new
-	index := -1
-	for i, title := range user.Titles {
-		if title == titleToRemove {
-			index = i
-			break
-		}
-	}
-
-	if index == -1 {
-		return fmt.Errorf("attempting to remove a title that is not in UserData")
-	}
-
-	// Remove the Title by shifting subsequent elements to the index of the titleToRemove
-	// Update size
-	copy(user.Titles[index:], user.Titles[index+1:])
-	user.Titles = user.Titles[:len(user.Titles)-1]
-	s.UpdateUser(user.Username, user.Titles)
 
 	return nil
 }
