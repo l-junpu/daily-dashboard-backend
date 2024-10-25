@@ -26,6 +26,9 @@ func main() {
 	}
 	api.InitializeMongoDBApi(mongoClient)
 
+	// Register Common APIs - MSSQL + MongoDB
+	api.InitializeSharedApi(sqlSvr, mongoClient)
+
 	// Listen to requests to Server
 	serverAddr := os.Getenv("SERVER_ADDRESS")
 	http.ListenAndServe(serverAddr, nil)
