@@ -19,13 +19,13 @@ func InitializeMssqlApi(m *database.MssqlServer) {
 
 func InitializeMongoDBApi(c *llm.MongoDBClient) {
 	// // Frontend Related APIs
-	// http.HandleFunc("/get_convos", HandleGetConvosFromUser(c))
+	http.HandleFunc("/get_convos", HandleGetConvosFromUser(c))
 	// http.HandleFunc("/get_convo_details", HandleGetConvoDetails(c))
 
 	// LLM Related APIs
 	http.HandleFunc("/create_new_convo", HandleCreateNewConvo(c))
-	// http.HandleFunc("/delete_convo", HandleDeleteConvo(c))
-	// http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c))
+	http.HandleFunc("/delete_convo", HandleDeleteConvo(c))
+	http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c))
 }
 
 func InitializeSharedApi(m *database.MssqlServer, c *llm.MongoDBClient) {

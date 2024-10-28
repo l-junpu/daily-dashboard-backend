@@ -12,8 +12,8 @@ type UserDetails struct {
 }
 
 type MongoConvoDetails struct {
-	Title    string
-	ObjectID primitive.ObjectID
+	Title    string             `json:"title"`
+	ObjectID primitive.ObjectID `json:"id"`
 }
 
 type MongoUserDetails struct {
