@@ -35,6 +35,31 @@ func HandleGetConvosFromUser(c *llm.MongoDBClient) http.HandlerFunc {
 	}
 }
 
+func HandleGetConvoHistory(c *llm.MongoDBClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if preflight := HandleOptionsPreflightRequests(w, r); preflight {
+			return
+		}
+
+		// Decode user data
+		var request data.ConversationRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = fmt.Errorf("unable to decode user request in HandleGetConvoHistory(): %w", err)
+			log.Fatal(err)
+		}
+
+		convo, err := c.FindConversation(request.Username, request.ObjectID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			err = fmt.Errorf("unable to retrieve conversation history from MongoDB: %w", err)
+			log.Fatal(err)
+		}
+
+		WriteAsJson(w, map[string]interface{}{"messages": convo.Messages}, http.StatusOK)
+	}
+}
+
 func HandleCreateNewConvo(c *llm.MongoDBClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if preflight := HandleOptionsPreflightRequests(w, r); preflight {
@@ -73,7 +98,7 @@ func HandleDeleteConvo(c *llm.MongoDBClient) http.HandlerFunc {
 		}
 
 		// Decode user data
-		var request data.DeleteConversationRequest
+		var request data.ConversationRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			err = fmt.Errorf("unable to decode delete convo details in HandleDeleteConvo(): %w", err)
@@ -103,6 +128,8 @@ func HandleNewUserPrompt(c *llm.MongoDBClient) http.HandlerFunc {
 			err = fmt.Errorf("unable to decode new user prompt details in HandleNewUserPrompt(): %w", err)
 			log.Fatal(err)
 		}
+
+		fmt.Println(request)
 
 		if err := c.InsertNewMessage(request.Username, request.Id, request.Message); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

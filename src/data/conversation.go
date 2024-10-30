@@ -17,7 +17,7 @@ type CreateConversationRequest struct {
 	Messages  []Message `json:"messages" bson:"messages"`
 }
 
-type DeleteConversationRequest struct {
+type ConversationRequest struct {
 	Username string             `json:"username"`
 	ObjectID primitive.ObjectID `json:"id"`
 }
