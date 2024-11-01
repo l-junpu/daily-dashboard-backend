@@ -151,16 +151,13 @@ func (s *MongoDBClient) deleteTitle(username string, idToRemove primitive.Object
 	return nil
 }
 
-// Insert Message into Conversation
+// Insert Message into Conversation & Bump Title
 func (s *MongoDBClient) InsertNewMessage(username string, id primitive.ObjectID, message data.Message) error {
-	convo, err := s.FindConversation(username, id)
-	if err != nil {
-		return fmt.Errorf(": %w", err)
+	if err := s.updateConversation(username, id, message); err != nil {
+		return err
 	}
 
-	convo.Messages = append(convo.Messages, message)
-	err = s.updateConversation(username, id, *convo)
-
+	err := s.bumpConversationSequence(username, id)
 	return err
 }
 
@@ -171,6 +168,52 @@ func (s *MongoDBClient) GetConversationDetails(username string) ([]data.MongoCon
 		return make([]data.MongoConvoDetails, 0), fmt.Errorf("unable to find user when retrieving conversation details: %w", err)
 	}
 	return user.Conversations, nil
+}
+
+func (s *MongoDBClient) UpdateConversationDetails(username string, details []data.MongoConvoDetails) error {
+	filter := bson.M{"username": username}
+	update := bson.M{"$set": bson.M{"conversations": details}}
+	coll := s.MongoClient.Database("UserData").Collection("Users")
+
+	result, err := coll.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update conversation: %w", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no documents matched the filter")
+	}
+
+	return nil
+}
+
+// Bumps the updated conversation to the front of the list
+func (s *MongoDBClient) bumpConversationSequence(username string, id primitive.ObjectID) error {
+	// Retrieve all Conversations
+	convoDetails, err := s.GetConversationDetails(username)
+	if err != nil {
+		return fmt.Errorf("unable to retrieve conversation details from MongoDB: %w", err)
+	}
+
+	// Find the Conversation to be shifted
+	var idx int = -1
+	for i, detail := range convoDetails {
+		if detail.ObjectID == id {
+			idx = i
+			break
+		}
+	}
+
+	// If it exists (Which it should...), shift it to the front
+	if idx != -1 {
+		var updatedConvoDetails = append([]data.MongoConvoDetails{}, convoDetails[:idx]...)
+		updatedConvoDetails = append(updatedConvoDetails, convoDetails[idx+1:]...)
+		updatedConvoDetails = append([]data.MongoConvoDetails{convoDetails[idx]}, updatedConvoDetails...)
+
+		return s.UpdateConversationDetails(username, updatedConvoDetails)
+	} else {
+		return fmt.Errorf("unable to find the conversation that was tied to ObjectId")
+	}
 }
 
 // Retrieves the Actual Conversation from MongoDB
@@ -187,10 +230,10 @@ func (s *MongoDBClient) FindConversation(username string, id primitive.ObjectID)
 	return &convo, nil
 }
 
-// Updates a Conversation in MongoDB
-func (s *MongoDBClient) updateConversation(username string, id primitive.ObjectID, convo data.Conversation) error {
+// Updates a Conversation's history in MongoDB
+func (s *MongoDBClient) updateConversation(username string, id primitive.ObjectID, message data.Message) error {
 	filter := bson.M{"_id": id}
-	update := bson.M{"$set": bson.M{"messages": convo.Messages}}
+	update := bson.M{"$push": bson.M{"messages": message}}
 	coll := s.MongoClient.Database("ConversationData").Collection(username)
 
 	result, err := coll.UpdateOne(context.Background(), filter, update)
@@ -198,8 +241,8 @@ func (s *MongoDBClient) updateConversation(username string, id primitive.ObjectI
 		return fmt.Errorf("failed to update conversation: %w", err)
 	}
 
-	if result.ModifiedCount != 1 {
-		return fmt.Errorf("expected 1 document to be modified, got %d", result.ModifiedCount)
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no documents matched the filter")
 	}
 
 	return nil

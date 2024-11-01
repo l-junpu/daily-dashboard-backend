@@ -87,7 +87,7 @@ func HandleCreateNewConvo(c *llm.MongoDBClient) http.HandlerFunc {
 			log.Fatal(err)
 		}
 
-		WriteAsJson(w, map[string]interface{}{"id": id}, http.StatusOK)
+		WriteAsJson(w, map[string]interface{}{"id": id.Hex()}, http.StatusOK)
 	}
 }
 
@@ -129,8 +129,7 @@ func HandleNewUserPrompt(c *llm.MongoDBClient) http.HandlerFunc {
 			log.Fatal(err)
 		}
 
-		fmt.Println(request)
-
+		// Insert our new prompt
 		if err := c.InsertNewMessage(request.Username, request.Id, request.Message); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			err = fmt.Errorf("unable to add message to conversation in MongoDB: %w", err)
