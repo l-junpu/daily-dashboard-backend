@@ -17,15 +17,15 @@ func InitializeMssqlApi(m *database.MssqlServer) {
 	http.HandleFunc("/remove_task_from_user", HandleRemoveTaskFromUser(m))
 }
 
-func InitializeMongoDBApi(c *llm.MongoDBClient) {
+func InitializeMongoDBApi(c *llm.MongoDBClient, r *llm.RedisClient) {
 	// Frontend Related APIs
 	http.HandleFunc("/get_convos", HandleGetConvosFromUser(c))
-	http.HandleFunc("/get_convo_history", HandleGetConvoHistory(c))
+	http.HandleFunc("/get_convo_history", HandleGetConvoHistory(c, r))
 
 	// LLM Related APIs
 	http.HandleFunc("/create_new_convo", HandleCreateNewConvo(c))
-	http.HandleFunc("/delete_convo", HandleDeleteConvo(c))
-	http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c))
+	http.HandleFunc("/delete_convo", HandleDeleteConvo(c, r))
+	http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c, r))
 }
 
 func InitializeSharedApi(m *database.MssqlServer, c *llm.MongoDBClient) {

@@ -19,12 +19,18 @@ func main() {
 	}
 	api.InitializeMssqlApi(sqlSvr)
 
-	// Create & Initialize MongoDB Server
+	// Create Redis Server
+	redisClient, err := llm.CreateRedisClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create & Initialize MongoDB Server + Redis Client
 	mongoClient, err := llm.CreateMongoDBClient()
 	if err != nil {
 		log.Fatal(err)
 	}
-	api.InitializeMongoDBApi(mongoClient)
+	api.InitializeMongoDBApi(mongoClient, redisClient)
 
 	// Register Common APIs - MSSQL + MongoDB
 	api.InitializeSharedApi(sqlSvr, mongoClient)
@@ -32,5 +38,4 @@ func main() {
 	// Listen to requests to Server
 	serverAddr := os.Getenv("SERVER_ADDRESS")
 	http.ListenAndServe(serverAddr, nil)
-
 }
