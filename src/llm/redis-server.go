@@ -46,7 +46,8 @@ func (r *RedisClient) Terminate() error {
 	return r.RedisClient.FlushDB(context.Background()).Err()
 }
 
-func (r *RedisClient) SetConversationData(idHex string, convo *[]data.Message) error {
+// convo *[]data.Message
+func (r *RedisClient) SetConversationData(idHex string, convo *data.Conversation) error {
 	// Convert our Conversation to a Byte Array
 	convoBytes, err := json.Marshal(convo)
 	if err != nil {
@@ -57,7 +58,7 @@ func (r *RedisClient) SetConversationData(idHex string, convo *[]data.Message) e
 	return r.RedisClient.Set(context.Background(), idHex, convoBytes, 0).Err()
 }
 
-func (r *RedisClient) GetConversationData(idHex string) (*[]data.Message, error) {
+func (r *RedisClient) GetConversationData(idHex string) (*data.Conversation, error) {
 	// Retrieve the Conversation Bytes from Redis
 	convoBytes, err := r.RedisClient.Get(context.Background(), idHex).Bytes()
 	if err != nil {
@@ -65,7 +66,7 @@ func (r *RedisClient) GetConversationData(idHex string) (*[]data.Message, error)
 	}
 
 	// Convert the Byte Array into our Conversation Array
-	var convo []data.Message
+	var convo data.Conversation
 	err = json.Unmarshal(convoBytes, &convo)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshall convoBytes from Redis: %w", err)

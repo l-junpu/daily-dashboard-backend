@@ -65,7 +65,7 @@ func HandleGetConvoHistory(c *llm.MongoDBClient, rc *llm.RedisClient) http.Handl
 		}
 
 		// Load the new Conversation into Redis
-		if err := rc.SetConversationData(request.ObjectID.Hex(), &convo.Messages); err != nil {
+		if err := rc.SetConversationData(request.ObjectID.Hex(), convo); err != nil {
 			log.Fatal(err)
 		}
 
@@ -161,7 +161,9 @@ func HandleNewUserPrompt(c *llm.MongoDBClient, rc *llm.RedisClient) http.Handler
 		if err != nil {
 			log.Fatalln(err)
 		}
-		*convo = append(*convo, request.Message)
+		convo.Messages = append(convo.Messages, request.Message)
+
+		c.GetConversationDetails(request.Username)
 
 		// Send the prompt to the Inferer and receive the Response
 		var Sender = inferer.Endpoint{
@@ -175,7 +177,7 @@ func HandleNewUserPrompt(c *llm.MongoDBClient, rc *llm.RedisClient) http.Handler
 			Role:    "assistant",
 			Content: response,
 		}
-		*convo = append(*convo, assistantResponse)
+		convo.Messages = append(convo.Messages, assistantResponse)
 		rc.SetConversationData(request.Id.Hex(), convo)
 		c.InsertNewMessage(request.Username, request.Id, assistantResponse)
 

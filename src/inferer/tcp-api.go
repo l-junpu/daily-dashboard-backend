@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func (e Endpoint) SendMessage(convo *[]data.Message, w *http.ResponseWriter) string {
+func (e Endpoint) SendMessage(convo *data.Conversation, w *http.ResponseWriter) string {
 	fmt.Println("Sending our conversation over: ", *convo)
 
 	// Connect to the server
