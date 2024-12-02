@@ -36,6 +36,31 @@ func HandleGetConvosFromUser(c *llm.MongoDBClient) http.HandlerFunc {
 	}
 }
 
+func HandleGetConvoDetails(c *llm.MongoDBClient, rc *llm.RedisClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if preflight := HandleOptionsPreflightRequests(w, r); preflight {
+			return
+		}
+
+		// Decode user data
+		var request data.GetConversationDetailsRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			err = fmt.Errorf("unable to decode user request in HandleGetConvoDetails(): %w", err)
+			log.Fatal(err)
+		}
+
+		convo, err := c.FindConversation(request.Username, request.ObjectID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			err = fmt.Errorf("unable to retrieve conversation history from MongoDB: %w", err)
+			log.Fatal(err)
+		}
+
+		WriteAsJson(w, map[string]interface{}{"tags": convo.Tags, "docs": convo.Documents}, http.StatusOK)
+	}
+}
+
 func HandleGetConvoHistory(c *llm.MongoDBClient, rc *llm.RedisClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if preflight := HandleOptionsPreflightRequests(w, r); preflight {

@@ -23,6 +23,11 @@ type LoadConversationRequest struct {
 	ObjectID     primitive.ObjectID  `json:"id"`
 }
 
+type GetConversationDetailsRequest struct {
+	Username     string              `json:"username"`
+	ObjectID     primitive.ObjectID  `json:"id"`
+}
+
 type DeleteConversationRequest struct {
 	Username string             `json:"username"`
 	ObjectID primitive.ObjectID `json:"id"`

@@ -20,6 +20,7 @@ func InitializeMssqlApi(m *database.MssqlServer) {
 func InitializeMongoDBApi(c *llm.MongoDBClient, r *llm.RedisClient) {
 	// Frontend Related APIs
 	http.HandleFunc("/get_convos", HandleGetConvosFromUser(c))
+	http.HandleFunc("/get_convo_details", HandleGetConvoDetails(c, r))
 	http.HandleFunc("/get_convo_history", HandleGetConvoHistory(c, r))
 
 	// LLM Related APIs

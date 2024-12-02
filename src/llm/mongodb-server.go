@@ -275,23 +275,23 @@ func (s *MongoDBClient) InsertNewConversation(username string, conversation data
 
 // Delete a Conversation from MongoDB
 func (s *MongoDBClient) DeleteConversation(username string, objectId primitive.ObjectID) error {
-	filter := bson.M{"_id": objectId}
-	convoCollection := s.MongoClient.Database("ConversationData").Collection(username)
+	// // This portion removes the Conversation from the DB - Ideally we avoid
+	// // this so we can still have our "accurate" summary logs
+	// filter := bson.M{"_id": objectId}
+	// convoCollection := s.MongoClient.Database("ConversationData").Collection(username)
 
-	// Removes the Conversation from Username
-	result, err := convoCollection.DeleteOne(context.Background(), filter)
-	if err != nil {
-		return fmt.Errorf("failed to delete conversation from ConversationData: %w", err)
-	}
+	// // Removes the Conversation from Username
+	// result, err := convoCollection.DeleteOne(context.Background(), filter)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to delete conversation from ConversationData: %w", err)
+	// } else if result.DeletedCount != 1 {
+	// 	return fmt.Errorf("expected 1 document to be deleted, got %d", result.DeletedCount)
+	// }
 
 	// Removes the TitleId attached to the UserData
-	err = s.deleteTitle(username, objectId)
+	err := s.deleteTitle(username, objectId)
 	if err != nil {
 		return fmt.Errorf("unable to delete title from UserData %w", err)
-	}
-
-	if result.DeletedCount != 1 {
-		return fmt.Errorf("expected 1 document to be deleted, got %d", result.DeletedCount)
 	}
 
 	return nil
