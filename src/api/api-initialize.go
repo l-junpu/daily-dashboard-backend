@@ -2,6 +2,7 @@ package api
 
 import (
 	"daily-dashboard-backend/src/database"
+	"daily-dashboard-backend/src/inferer"
 	"daily-dashboard-backend/src/llm"
 	"net/http"
 )
@@ -17,7 +18,7 @@ func InitializeMssqlApi(m *database.MssqlServer) {
 	http.HandleFunc("/remove_task_from_user", HandleRemoveTaskFromUser(m))
 }
 
-func InitializeMongoDBApi(c *llm.MongoDBClient, r *llm.RedisClient) {
+func InitializeMongoDBApi(c *llm.MongoDBClient, r *llm.RedisClient, s *inferer.Scheduler) {
 	// Frontend Related APIs
 	http.HandleFunc("/get_convos", HandleGetConvosFromUser(c))
 	http.HandleFunc("/get_convo_details", HandleGetConvoDetails(c, r))
@@ -26,7 +27,7 @@ func InitializeMongoDBApi(c *llm.MongoDBClient, r *llm.RedisClient) {
 	// LLM Related APIs
 	http.HandleFunc("/create_new_convo", HandleCreateNewConvo(c))
 	http.HandleFunc("/delete_convo", HandleDeleteConvo(c, r))
-	http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c, r))
+	http.HandleFunc("/new_user_prompt", HandleNewUserPrompt(c, r, s))
 }
 
 func InitializeSharedApi(m *database.MssqlServer, c *llm.MongoDBClient) {

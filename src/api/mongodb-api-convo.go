@@ -160,7 +160,7 @@ func HandleDeleteConvo(c *llm.MongoDBClient, rc *llm.RedisClient) http.HandlerFu
 	}
 }
 
-func HandleNewUserPrompt(c *llm.MongoDBClient, rc *llm.RedisClient) http.HandlerFunc {
+func HandleNewUserPrompt(c *llm.MongoDBClient, rc *llm.RedisClient, s *inferer.Scheduler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if preflight := HandleOptionsPreflightRequests(w, r); preflight {
 			return
@@ -190,12 +190,19 @@ func HandleNewUserPrompt(c *llm.MongoDBClient, rc *llm.RedisClient) http.Handler
 
 		c.GetConversationDetails(request.Username)
 
-		// Send the prompt to the Inferer and receive the Response
-		var Sender = inferer.Endpoint{
-			Host: "localhost",
-			Port: 7060,
+		// Attempt to retrieve our Endpoint from the Scheduler
+		Endpt, err := s.GetEndpoint()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
 		}
-		response := Sender.SendMessage(convo, &w)
+
+		// Send our prompt when an Endpoint is made available from the Scheduler
+		response := Endpt.SendMessage(convo, &w)
+
+		// Return the Endpoint to the Scheduler so other users can send a prompt
+		s.ReturnEndpoint(Endpt)
 
 		// Append the response to Redis and MongoDB
 		var assistantResponse = data.Message{

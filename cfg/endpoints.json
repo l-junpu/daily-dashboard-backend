@@ -1,0 +1,10 @@
+{
+    "maxRetries": 10,
+    "retryInterval": 5,
+    "endpoints": [
+        {
+            "host": "localhost",
+            "port": 7060
+        }
+    ]
+}

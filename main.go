@@ -3,6 +3,7 @@ package main
 import (
 	"daily-dashboard-backend/src/api"
 	"daily-dashboard-backend/src/database"
+	"daily-dashboard-backend/src/inferer"
 	"daily-dashboard-backend/src/llm"
 	"log"
 	"net/http"
@@ -25,12 +26,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Create an Endpoint Scheduler
+	scheduler, err := inferer.CreateScheduler(os.Getwd())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Create & Initialize MongoDB Server + Redis Client
 	mongoClient, err := llm.CreateMongoDBClient()
 	if err != nil {
 		log.Fatal(err)
 	}
-	api.InitializeMongoDBApi(mongoClient, redisClient)
+	api.InitializeMongoDBApi(mongoClient, redisClient, scheduler)
 
 	// Register Common APIs - MSSQL + MongoDB
 	api.InitializeSharedApi(sqlSvr, mongoClient)
